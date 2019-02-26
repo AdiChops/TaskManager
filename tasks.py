@@ -1,9 +1,37 @@
 class Task:
-    def __init__(self, desc):
+    def __init__(self, desc, num):
+        self.num = num
         self.desc = desc
         self.completed = False
         self.priority = None
         self.project = None
+
+    def __str__(self):
+        string = f'''
+Task # {self.num}
+-----------
+Description: {self.desc}
+Completed: {self.completed}'''
+
+        if self.priority is not None:
+            string += f'\nPriority: {self.priority}'
+        if self.project is not None:
+            string += f'\nProject: {self.project}'
+        return string
+
+    def __repr__(self):
+        dict_repr = {'desc': self.desc, 'completed': self.completed, 'priority': self.priority, 'project': self.project}
+        return str(dict_repr)
+
+    def __lt__(self, other):
+        if self.priority is None and other.priority is not None:
+            return False
+        elif self.priority is not None and other.priority is None:
+            return True
+        elif self.priority == other.priority:
+            return self.num < other.num
+        else:
+            return self.priority < other.priority
 
 
 class TaskNotFoundError(Exception):
@@ -38,13 +66,13 @@ Enter q to quit.
             tasks = file.readlines()
             for line in tasks:
                 task = line.split('~')
-                single_task = Task(task[1])
+                single_task = Task(task[1], int(task[0]))
                 single_task.completed = task[2] == 'True'
                 priority = task[3]
                 if priority == 'None':
                     single_task.priority = None
                 else:
-                    single_task.priority = priority
+                    single_task.priority = int(priority)
                 project = task[4].strip()
                 if project == 'None':
                     single_task.project = None
@@ -63,9 +91,11 @@ Enter q to quit.
                 elif " !" in command:
                     index_of_priority = command.index(" !") + 2
                     description = command[4:index_of_priority-2]
+                    priority = int(command[index_of_priority])
+                    if priority < 1 or priority > 4:
+                        raise InvalidCommandError("Priority must be number from 1 to 4")
                     while len(description) == 0:
                         description = input('Please enter a description for the new task to add > ')
-                    priority = command[index_of_priority]
                     if " #" in command:
                         index_of_project = command.index(" #") + 2
                         project = command[index_of_project:]
@@ -75,33 +105,44 @@ Enter q to quit.
                     description = command[4:index_of_project - 2]
                     while len(description) == 0:
                         description = input('Please enter a description for the new task to add > ')
-                task = Task(description)
+                task = Task(description, new_id)
                 task.priority = priority
                 task.project = project
                 task_dict[new_id] = task
+                print(f'New task added with task # {new_id}')
             elif command[:4] == 'upd ':
                 project = None
                 priority = None
                 index_of_task = command.index(" ") + 1
                 end_index = command.find(" ", index_of_task)
-                task_num = int(command[index_of_task:end_index])
+                task_num = command[index_of_task:end_index]
                 if end_index == -1 or end_index + 1 == len(command):
                     task_num = int(command[index_of_task:].strip())
-                    description = input(f'Enter the updated description for task # {task_num} > ')
+                    if task_num in task_dict:
+                        description = input(f'Enter the updated description for task # {task_num} > ')
                 elif " !" in command:
                     index_of_priority = command.index(" !") + 2
-                    description = command[end_index:index_of_priority-2]
-                    priority = command[index_of_priority]
+                    description = command[end_index+1:index_of_priority-2]
+                    priority = int(command[index_of_priority])
+                    if priority < 1 or priority > 4:
+                        raise InvalidCommandError("Priority must be number from 1 to 4")
                     if " #" in command:
                         index_of_project = command.index(" #") + 2
                         project = command[index_of_project:]
                 elif " #" in command:
                     index_of_project = command.index(" #") + 2
                     project = command[index_of_project:]
-                    description = command[end_index+2:index_of_project - 2]
-                task = task_dict[task_num]
+                    description = command[end_index+1:index_of_project - 2]
+                task_num = int(task_num)
+                if task_num not in task_dict:
+                    raise TaskNotFoundError(f'Task # {task_num} does not exist')
                 if len(description) > 0:
-                    task.desc = description
+                    task_dict[task_num].desc = description
+                if project is not None:
+                    task_dict[task_num].project = project
+                if priority is not None:
+                    task_dict[task_num].priority = priority
+                print(f'Updated task # {task_num}')
             elif command[:4] == 'rem ':
                 index_of_task = command.find(" ") + 1
                 task_num = int(command[index_of_task:])
@@ -113,19 +154,12 @@ Enter q to quit.
                     print(f'Task # {task_num} deleted')
             elif command == 'list all':
                 for key in sorted(task_dict):
-                    task = task_dict[key]
-                    print(f'''
-Task # {key}
------------
-Description: {task.desc}
-Completed: {task.completed}''')
-                    if task.priority is not None:
-                        print(f'Priority: {task.priority}')
-                    if task.project is not None:
-                        print(f'Project: {task.project}')
+                    print(task_dict[key])
 
             elif command == 'list todo':
-                task_dict = sorted(task_dict.values(), key=lambda t: (t.priority, t))
+                for val in sorted(task_dict.values()):
+                    if not val.completed:
+                        print(val)
             elif command == 'purge':
                 to_del = [k for k in task_dict if task_dict[k].completed]
                 for i in to_del:
@@ -139,9 +173,8 @@ Completed: {task.completed}''')
                 task_num = int(command[index_of_task:])
                 if task_num not in task_dict:
                     raise TaskNotFoundError(f"Task number {task_num} does not exist.")
-                task = task_dict[task_num]
-                task['completed'] = True
-                task_dict[task_num] = task
+                task_dict[task_num].completed = True
+                print(f'Task # {task_num} marked as complete.')
             else:
                 raise InvalidCommandError(f'{command} is not a valid command. Make sure required components are present.')
             file.truncate(0)
@@ -156,4 +189,5 @@ Completed: {task.completed}''')
         print(e.message)
     except ValueError as e:
         print('''An unexpected value was encountered.
-Make sure that the required components of the command are present and in valid format.''')
+Make sure that the required components of the command are present and in valid format.
+Also ensure that no manual changes are made to the file.''')

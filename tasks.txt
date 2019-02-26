@@ -1,15 +1,2 @@
-3~hello~False~2~None
-4~4~False~2~None
-6~Test~False~2~school
-8~description~False~2~school
-9~shoot~False~None~None
-10~this~False~None~None
-11~things~False~None~None
-12~todo~False~None~None
-13~list~False~None~None
-14~testing thid out~False~1~school
-15~test it out again~False~None~projects
-16~test this~False~2~school
-17~ ~False~3~proj
-18~Hi~False~2~None
-19~Testing classes~False~None~None
+1~descrription~False~4None
+2~description~False~1~this
