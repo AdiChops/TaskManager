@@ -155,11 +155,17 @@ Enter q to quit.
             elif command == 'list all':
                 for key in sorted(task_dict):
                     print(task_dict[key])
+                if len(task_dict) == 0:
+                    print('Nothing to show here!')
 
             elif command == 'list todo':
+                values = False
                 for val in sorted(task_dict.values()):
                     if not val.completed:
                         print(val)
+                        values = True
+                if not values:
+                    print('Nothing to show here!')
             elif command == 'purge':
                 to_del = [k for k in task_dict if task_dict[k].completed]
                 for i in to_del:
