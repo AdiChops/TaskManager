@@ -1,6 +1,5 @@
 # TaskManager
 ## Manage your tasks with ease
----
 Use:
 - `add` to add a task
 - `upd x` to update task number x
